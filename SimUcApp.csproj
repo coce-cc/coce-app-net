@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <PackOnBuild>true</PackOnBuild>
+    <PackageId>Simcu.SimUcApp</PackageId>
+    <Authors>xRain</Authors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Simcu.SimApi" Version="5.1.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+  </ItemGroup>
+</Project>
