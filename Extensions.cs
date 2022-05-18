@@ -16,8 +16,8 @@ public static class Extensions
     /// <param name="appKey"></param>
     /// <returns></returns>
     public static IServiceCollection AddCoceApp(this IServiceCollection builder, string server,
-        string appId, string appKey)
+        string appId, string appKey, bool debug = false)
     {
-        return builder.AddSingleton(new Application(server, appId, appKey));
+        return builder.AddSingleton(new Application(server, appId, appKey, debug));
     }
 }

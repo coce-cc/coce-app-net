@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Linq;
-using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text.Json;
 using SimApi.Communications;
-using Newtonsoft.Json;
 using SimApi.Helpers;
 
 namespace CoceApp;
@@ -16,34 +17,41 @@ public class Application
 
     private string AppKey { get; }
 
-    public Application(string server, string appId, string appKey)
+    public bool Debug { get; set; }
+
+    private JsonSerializerOptions JsonSerializerOptions = new()
     {
-        Server = server + "/api/application";
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
+    public Application(string server, string appId, string appKey, bool debug = false)
+    {
+        Debug = debug;
+        Server = server + "/api/app";
         AppId = appId;
         AppKey = appKey;
     }
 
-    private string Query(string uri, string body)
+    private TRes Query<TReq, TRes>(string uri, TReq obj)
     {
-        var wc = new WebClient();
-        wc.Headers.Add(HttpRequestHeader.ContentType, "application/json");
-        Console.WriteLine($"请求的地址是: {Server + uri}");
-        Console.WriteLine($"请求的内容: {body}");
-        var resp = wc.UploadString(Server + uri, body);
-        Console.WriteLine($"请求的结果: {resp}");
-        return resp;
+        var json = SignRequest(obj);
+        var wc = new HttpClient();
+        if (Debug) Console.WriteLine($"请求的地址是: {Server + uri}");
+        if (Debug) Console.WriteLine($"请求的内容: {SimApiUtil.Json(json)}");
+        var resp = wc.PostAsJsonAsync(Server + uri, json).Result;
+        if (Debug) Console.WriteLine($"请求的结果: {resp}");
+        return resp.Content.ReadFromJsonAsync<TRes>().Result;
     }
 
-    private string SignRequest<T>(T request)
+    private T SignRequest<T>(T request)
     {
-        (request as SimUcRequest.BaseApiRequest).AppId = AppId;
-        (request as SimUcRequest.BaseApiRequest).Time =
-            (int)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, 0)).TotalSeconds;
-        var requestJson = JsonConvert.SerializeObject(request);
+        (request as Request.BaseApiRequest).AppId = AppId;
+        (request as Request.BaseApiRequest).Time = (int)SimApiUtil.TimestampNow;
+        var requestJson = JsonSerializer.Serialize(request, JsonSerializerOptions);
         var parameters = JsonDocument.Parse(requestJson).RootElement.EnumerateObject();
 
         var dic = parameters.ToDictionary(x => x.Name, x => x.Value.ToString());
-        dic.Remove("Sign");
+        dic.Remove("sign");
         var sorted = dic.OrderBy(x => x.Key);
         string signStr = "";
         foreach (var item in sorted)
@@ -52,11 +60,11 @@ public class Application
         }
 
         signStr = signStr.TrimEnd('&');
-        Console.WriteLine($"签名的字符串: {signStr}");
+        if (Debug) Console.WriteLine($"签名的字符串: {signStr}");
         var sign = SimApiUtil.Md5(signStr + AppKey);
-        Console.WriteLine($"签名: {sign}");
-        (request as SimUcRequest.BaseApiRequest).Sign = sign;
-        return JsonConvert.SerializeObject(request);
+        if (Debug) Console.WriteLine($"签名: {sign}");
+        (request as Request.BaseApiRequest).Sign = sign;
+        return request;
     }
 
     /// <summary>
@@ -71,7 +79,7 @@ public class Application
     public SimApiBaseResponse UpdateCard(string userId, string groupId, CardDataTypeEnum type, string data,
         string image = null)
     {
-        var request = new SimUcRequest.UpdateCardRequest
+        var request = new Request.UpdateCardRequest
         {
             UserId = userId,
             GroupId = groupId,
@@ -79,10 +87,7 @@ public class Application
             Data = data,
             Image = image
         };
-        var body = SignRequest(request);
-        Console.WriteLine(body);
-        var resp = Query("/card", body);
-        return JsonConvert.DeserializeObject<SimApiBaseResponse>(resp);
+        return Query<Request.UpdateCardRequest, SimApiBaseResponse>("/card", request);
     }
 
 
@@ -98,7 +103,7 @@ public class Application
     public SimApiBaseResponse SendMessage(string userId, CardDataTypeEnum type, string text, string title = null,
         string image = null)
     {
-        var request = new SimUcRequest.SendMessageRequest
+        var request = new Request.SendMessageRequest
         {
             UserId = userId,
             Type = type.ToString(),
@@ -106,9 +111,7 @@ public class Application
             Title = title,
             Image = image
         };
-        var body = SignRequest(request);
-        var resp = Query("/message", body);
-        return JsonConvert.DeserializeObject<SimApiBaseResponse>(resp);
+        return Query<Request.SendMessageRequest, SimApiBaseResponse>("/message", request);
     }
 
     /// <summary>
@@ -116,15 +119,14 @@ public class Application
     /// </summary>
     /// <param name="token"></param>
     /// <returns></returns>
-    public Response.GetUserByTokenResponse GetUserByToken(string token)
+    public SimApiBaseResponse<Response.GetUserByTokenResponse> GetUserByToken(string token)
     {
-        var request = new SimUcRequest.GetUserByTokenRequest
+        var request = new Request.GetUserByTokenRequest
         {
             Token = token
         };
-        var body = SignRequest(request);
-        var resp = Query("/user/info", body);
-        return JsonConvert.DeserializeObject<Response.GetUserByTokenResponse>(resp);
+        return Query<Request.GetUserByTokenRequest, SimApiBaseResponse<Response.GetUserByTokenResponse>>("/user/info",
+            request);
     }
 
     /// <summary>
@@ -134,13 +136,12 @@ public class Application
     /// <returns></returns>
     public SimApiBaseResponse<Response.GetUserGroupsResponseItem[]> GetUserGroups(string userId)
     {
-        var request = new SimUcRequest.GetUserGroupsRequest
+        var request = new Request.GetUserGroupsRequest
         {
             UserId = userId
         };
-        var body = SignRequest(request);
-        var resp = Query("/user/groups", body);
-        return JsonConvert.DeserializeObject<SimApiBaseResponse<Response.GetUserGroupsResponseItem[]>>(resp);
+        return Query<Request.GetUserGroupsRequest, SimApiBaseResponse<Response.GetUserGroupsResponseItem[]>>(
+            "/user/groups", request);
     }
 
     /// <summary>
@@ -152,15 +153,13 @@ public class Application
     /// <returns></returns>
     public SimApiBaseResponse<string> TradeCreate(int amount, string name, string ext)
     {
-        var request = new SimUcRequest.TradeCreateRequest
+        var request = new Request.TradeCreateRequest
         {
             Amount = amount,
             Name = name,
             Ext = ext
         };
-        var body = SignRequest(request);
-        var resp = Query("/trade/create", body);
-        return JsonConvert.DeserializeObject<SimApiBaseResponse<string>>(resp);
+        return Query<Request.TradeCreateRequest, SimApiBaseResponse<string>>("/trade/create", request);
     }
 
     /// <summary>
@@ -168,14 +167,13 @@ public class Application
     /// </summary>
     /// <param name="tradeNo"></param>
     /// <returns></returns>
-    public Response.TradeCheckResponse TradeCheck(string tradeNo)
+    public SimApiBaseResponse<Response.TradeCheckResponse> TradeCheck(string tradeNo)
     {
-        var request = new SimUcRequest.TradeCheckRequest
+        var request = new Request.TradeCheckRequest
         {
             TradeNo = tradeNo
         };
-        var body = SignRequest(request);
-        var resp = Query("/trade/result", body);
-        return JsonConvert.DeserializeObject<Response.TradeCheckResponse>(resp);
+        return Query<Request.TradeCheckRequest, SimApiBaseResponse<Response.TradeCheckResponse>>("/trade/result",
+            request);
     }
 }

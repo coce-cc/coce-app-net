@@ -5,7 +5,7 @@ namespace CoceApp;
 
 public class Response
 {
-    public class TradeCheckResponse : SimApiBaseResponse
+    public class TradeCheckResponse
     {
         public string TradeNo { get; set; }
 
@@ -28,7 +28,7 @@ public class Response
         public DateTime CloseAt { get; set; }
     }
 
-    public class GetUserByTokenResponse : SimApiBaseResponse
+    public class GetUserByTokenResponse
     {
         public string UserId { get; set; }
 

@@ -2,7 +2,7 @@
 
 namespace CoceApp;
 
-public class SimUcRequest
+public class Request
 {
     public class BaseApiRequest
     {
