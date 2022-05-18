@@ -11,11 +11,11 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: '5.0.100'
+        dotnet-version: '6.0.300'
     - name: Publish
       run: |
         version=`git describe --tags`
         dotnet pack --configuration release -p:PackageVersion=$version
-        dotnet nuget push bin/release/Simcu.SimUcApp.$version.nupkg -k ${NUGET_APIKEY} -s https://www.nuget.org/api/v2/package
+        dotnet nuget push bin/release/Coce.AppNet.$version.nupkg -k ${NUGET_APIKEY} -s https://www.nuget.org/api/v2/package
       env:
         NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}

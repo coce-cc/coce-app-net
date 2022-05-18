@@ -1,10 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <PackOnBuild>true</PackOnBuild>
-    <PackageId>Simcu.SimUcApp</PackageId>
+    <PackageId>Coce.AppNet</PackageId>
     <Authors>xRain</Authors>
+    <AssemblyName>CoceApp</AssemblyName>
+    <RootNamespace />
+    <PackageVersion>1.0.1</PackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
