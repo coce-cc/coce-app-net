@@ -176,4 +176,38 @@ public class Application
         return Query<Request.TradeCheckRequest, SimApiBaseResponse<Response.TradeCheckResponse>>("/trade/result",
             request);
     }
+
+    /// <summary>
+    /// 发起退款
+    /// </summary>
+    /// <param name="tradeNo"></param>
+    /// <returns></returns>
+    public SimApiBaseResponse TradeRefund(string tradeNo)
+    {
+        var request = new Request.RefundTradeRequest
+        {
+            TradeNo = tradeNo
+        };
+        return Query<Request.RefundTradeRequest, SimApiBaseResponse>("/trade/refund", request);
+    }
+
+    /// <summary>
+    /// 向指定钱包转账
+    /// </summary>
+    /// <param name="targetId"></param>
+    /// <param name="coin"></param>
+    /// <param name="marks"></param>
+    /// <param name="type"></param>
+    /// <returns></returns>
+    public SimApiBaseResponse Transfer(string targetId, int coin, string marks = "", string type = "user")
+    {
+        var request = new Request.TransferRequest
+        {
+            Type = type,
+            TargetId = targetId,
+            Coin = coin,
+            Marks = marks
+        };
+        return Query<Request.TransferRequest, SimApiBaseResponse>("/transfer", request);
+    }
 }

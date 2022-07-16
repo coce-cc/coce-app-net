@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace CoceApp;
 
@@ -83,6 +84,22 @@ public class Request
     public class TradeCheckRequest : BaseApiRequest
     {
         public string TradeNo { get; set; }
+    }
+    
+    public class TransferRequest : BaseApiRequest
+    {
+        public string Type { get; set; }
+
+        public string TargetId { get; set; }
+
+        public int Coin { get; set; }
+
+        public string Marks { get; set; }
+    }
+    
+    public class RefundTradeRequest : BaseApiRequest
+    {
+        [Required] public string TradeNo { get; set; }
     }
 }
 
